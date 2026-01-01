@@ -5,11 +5,14 @@ import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
 import authRouter from "./routes/auth"
-import aiRouter from "./routes/ai"
+import itemRouter from "./routes/item"
+import categoryRouter from "./routes/category"
+import orderRouter from "./routes/order"
+import bookingRouter from "./routes/booking"
 import { authenticate } from "./middleware/auth"
 import { requireRole } from "./middleware/role"
 import { Role } from "./models/user.model"
-import { seedAdmin } from "./utils/adminSeeder"; // 💡 Admin Seeder එක import කරන්න
+import { seedAdmin } from "./utils/adminSeeder";
 dotenv.config()
 
 const PORT = process.env.PORT
@@ -21,12 +24,15 @@ app.use(express.json())
 app.use(
     cors({
         origin: ["http://localhost:5173","http://localhost:5174","https://rad-72-sample-fe.vercel.app/login"],
-        methods: ["GET", "POST", "PUT", "DELETE"]
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     })
 )
 
 app.use("/api/v1/auth", authRouter)
-app.use("/api/v1/ai", aiRouter)
+app.use("/api/v1/items", itemRouter)
+app.use("/api/v1/categories", categoryRouter)
+app.use("/api/v1/orders", orderRouter)
+app.use("/api/v1/bookings", bookingRouter)
 
 app.get("/", (req, res) => {
     res.send("Backend is running...")

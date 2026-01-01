@@ -38,7 +38,7 @@ export const seedAdmin = async (): Promise<void> => {
             contactNumber: 0, 
             password: hash,
             roles: [Role.ADMIN],
-            approved: Status.APPROVED,
+            approved: Status.ACTIVE,
         });
 
         console.log(`✨ Default Admin user created: ${ADMIN_EMAIL} with role ADMIN`);

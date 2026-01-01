@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { IUSER, Role, User } from "../models/user.model"
+import { User, Role, Status, IUSER } from "../models/user.model";
 import bcrypt from "bcryptjs"
 import { signAccessToken, signRefreshToken } from "../utils/tokens"
 import { AUthRequest } from "../middleware/auth"
@@ -28,7 +28,7 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       contactNumber,
       password: hash,
-      roles: [Role.USER]
+      roles: [Role.CUSTOMER]
     })
 
     res.status(201).json({
@@ -99,35 +99,6 @@ export const refreshToken = async (req: Request, res: Response) => {
   }
 }
 
-export const registerAdmin = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body
-
-    const existingUser = await User.findOne({ email })
-    if (existingUser) {
-      return res.status(400).json({ message: "Email exists" })
-    }
-
-    const hash = await bcrypt.hash(password, 10)
-
-    const user = await User.create({
-      email,
-      password: hash,
-      roles: [Role.ADMIN]
-    })
-
-    res.status(201).json({
-      message: "Admin registed",
-      data: { email: user.email, roles: user.roles }
-    })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({
-      message: "Internal server error"
-    })
-  }
-}
-
 export const getMyProfile = async (req: AUthRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" })
@@ -145,46 +116,119 @@ export const getMyProfile = async (req: AUthRequest, res: Response) => {
   res.status(200).json({ message: "ok", data: { id: _id, email, roles, fullname } })
 }
 
-export const roleUpdate = async (req: AUthRequest, res: Response) => {
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const role = req.query.role as string;
+    const status = req.query.status as string;
+
+    // Filtering logic
+    let query: any = {};
+    if (role && role !== "ALL") query.roles = { $in: [role] };
+    if (status && status !== "ALL") query.approved = status;
+
+    // Fetch users and total count in parallel
+    // dont want admin
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select("-password")
+        .$where('this.roles.indexOf("ADMIN") === -1')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(query)
+    ]);
+
+    // Count stats for the UI badges
+    const [customerCount, staffCount, activeCount, inactiveCount] = await Promise.all([
+        User.countDocuments({ roles: Role.CUSTOMER }),
+        User.countDocuments({ roles: { $ne: Role.CUSTOMER } }),
+        User.countDocuments({ approved: Status.ACTIVE }),
+        User.countDocuments({ approved: Status.INACTIVE }),
+    ]);
+
+    res.status(200).json({
+      message: "ok",
+      data: users,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      },
+      stats: {
+        all: await User.countDocuments(),
+        customerCount,
+        staffCount,
+        activeCount,
+        inactiveCount
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const saveUser = async (req: Request, res: Response) => {
     try {
-        const { role } = req.body; // අපේක්ෂිත නව role එක (උදා: 'ORGANIZER')
-
-        if (!req.user || !req.user._id) {
-            return res.status(401).json({ message: "Unauthorized or missing user context." });
-        }
-
-        // 💡 1. නව role එක වලංගු (valid) ද යන්න පරීක්ෂා කිරීම
-        if (!Object.values(Role).includes(role)) {
-            return res.status(400).json({ message: "Invalid role provided." });
-        }
+        const { fullname, email, password, contactNumber, roles, approved } = req.body;
         
-        // 💡 2. User ගේ current roles වලට නව role එක එකතු කිරීම (Array එකක් ලෙස)
-        // Set Operators භාවිතයෙන් array එකක් තුළ නැවත එම role එකම duplicate වීම වළක්වයි.
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user._id,
-            { $addToSet: { roles: role } }, // $addToSet: අලුත් role එකක් එකතු කරයි, නමුත් duplicate කරන්නේ නැත.
-            { new: true, select: "-password" }
-        ) as IUSER | null;
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: "Email already exists" });
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        // 💡 3. නව JWT Token නිකුත් කිරීම
-        // Role එක වෙනස් වූ නිසා, නව role එක සහිත නව accessToken එකක් අවශ්‍ය වේ.
-        const newAccessToken = signAccessToken(updatedUser);
+        const hashedPassword = await bcrypt.hash(password, 10);
         
-        res.status(200).json({
-            message: `User role successfully updated to include ${role}`,
-            data: { 
-                email: updatedUser.email, 
-                roles: updatedUser.roles,
-                accessToken: newAccessToken // නව token එක frontend වෙත යැවීම
-            }
+        const newUser = new User({
+            fullname,
+            email,
+            password: hashedPassword,
+            contactNumber,
+            roles, // මෙතනදී Admin තෝරන roles (ADMIN, BARISTA etc.) ඇතුළත් වේ
+            approved: approved || Status.ACTIVE
         });
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Failed to update user role." });
+        await newUser.save();
+        res.status(201).json({ message: "User created successfully", data: newUser });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Update User
+export const updateUser = async (req: Request, res: Response) => {
+    try {
+        const { fullname, email, contactNumber, roles, approved } = req.body;
+        const updateData: any = { fullname, email, contactNumber, roles, approved };
+
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        res.status(200).json({ message: "User updated", data: updatedUser });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Toggle Status (Active / Inactive)
+export const toggleUserStatus = async (req: Request, res: Response) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.approved = user.approved === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
+        await user.save();
+        res.status(200).json({ message: `User is now ${user.approved}`, status: user.approved });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Delete User
+export const deleteUser = async (req: Request, res: Response) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: "User deleted successfully" });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
     }
 };
