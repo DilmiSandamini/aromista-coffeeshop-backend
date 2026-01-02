@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import BookingModel, { BookingStatus } from "../models/booking.modal";
 
-// වෙන් කර ඇති මේස ලැයිස්තුව ලබා ගැනීම
 export const getBookedTables = async (req: Request, res: Response) => {
     try {
         const { date, time } = req.query;
@@ -22,13 +21,11 @@ export const getBookedTables = async (req: Request, res: Response) => {
     }
 };
 
-// නව වෙන්කිරීමක් සිදු කිරීම
 export const createBooking = async (req: any, res: Response) => {
     try {
         const { tableNumber, bookingDate, bookingTime } = req.body;
         const userId = req.user.sub;
 
-        // Backend එකෙන් නැවත වරක් පරීක්ෂා කිරීම (Double check)
         const isAlreadyBooked = await BookingModel.findOne({
             tableNumber,
             bookingDate: new Date(bookingDate),

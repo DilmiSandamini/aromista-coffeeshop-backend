@@ -5,12 +5,12 @@ import { ItemAvailability, ItemModel, ItemStatus } from "../models/item.modal";
 export const createItem = async (req: any, res: Response) => {
     try {
         const { name, description, price, category, availability, status } = req.body;
-        const userId = req.user.sub;
+        // const userId = req.user.sub;
+        const userId = req.user?.sub || req.user?._id; 
         
         let imageUrl = "";
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-        // රූපය පවතී නම් Cloudinary වෙත යැවීම
         if (files?.image?.[0]) {
             const file = files.image[0];
             const uploadRes: any = await new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@ export const createItem = async (req: any, res: Response) => {
             userId,
             name,
             description,
-            price: Number(price), // String ලෙස එන මිල Number කිරීම
+            price: Number(price), 
             category,
             availability: availability || "AVAILABLE", 
             status: status || "ACTIVE",

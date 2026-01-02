@@ -20,7 +20,6 @@ export const createOrder = async (req: any, res: Response) => {
         const orderItems = [];
 
         for (const orderItem of items) {
-            // Item ID එක පවතින බව තහවුරු කරගන්න
             if (!orderItem.item) continue;
 
             const product = await ItemModel.findById(orderItem.item);
@@ -94,7 +93,6 @@ export const getAllOrdersForBarista = async (req: Request, res: Response) => {
     }
 };
 
-// 2. Order Status එක වෙනස් කිරීම
 export const updateStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -111,7 +109,6 @@ export const updateStatus = async (req: Request, res: Response) => {
     }
 };
 
-// Backend logic for user search
 export const searchUserForAdmin = async (req: Request, res: Response) => {
     try {
         const { query } = req.query;
@@ -119,7 +116,6 @@ export const searchUserForAdmin = async (req: Request, res: Response) => {
             $or: [
                 { fullname: { $regex: query, $options: "i" } },
                 { email: { $regex: query, $options: "i" } },
-                // contactNumber එක Number එකක් නිසා regexMatch භාවිතා කරයි
                 { $expr: { $regexMatch: { input: { $toString: "$contactNumber" }, regex: query, options: "i" } } }
             ]
         }).limit(5).select("fullname email contactNumber _id");
@@ -138,7 +134,7 @@ export const createAdminOrder = async (req: any, res: Response) => {
         }
 
         const newOrder = new Order({
-            userId, // Admin විසින් තෝරාගත් User ID එක
+            userId, 
             items,
             totalAmount,
             status: "PENDING"

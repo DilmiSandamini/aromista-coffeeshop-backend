@@ -1,21 +1,21 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export enum OrderStatus {
-    PENDING = "PENDING",       // ඇණවුම ලැබී ඇත
-    PROCESSING = "PROCESSING", // සකස් කරමින් පවතී
-    COMPLETED = "COMPLETED",   // අවසන් කරන ලදි
-    CANCELLED = "CANCELLED"   // අවලංගු කරන ලදි
+    PENDING = "PENDING",       
+    PROCESSING = "PROCESSING", 
+    COMPLETED = "COMPLETED",   
+    CANCELLED = "CANCELLED"   
 }
 
 export interface IOrderItem {
-    item: mongoose.Types.ObjectId; // Item ID එක
-    quantity: number;              // ප්‍රමාණය
-    unitPrice: number;            // ඇණවුම කරන මොහොතේ මිල
+    item: mongoose.Types.ObjectId; 
+    quantity: number;              
+    unitPrice: number;            
 }
 
 export interface IORDER extends Document {
     _id: mongoose.Types.ObjectId;
-    userId: mongoose.Types.ObjectId; // ඇණවුම කළ User
+    userId: mongoose.Types.ObjectId; 
     items: IOrderItem[];
     totalAmount: number;
     status: OrderStatus;
