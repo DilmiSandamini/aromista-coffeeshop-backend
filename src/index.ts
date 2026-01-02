@@ -48,7 +48,6 @@ mongoose
     .connect(MONGO_URI)
     .then(() => {
         console.log("DB connected")
-         // 💡 DB සම්බන්ධ වූ පසු Admin Seeder එක ක්‍රියාත්මක කරන්න
         seedAdmin(); 
         console.log("Admin seeding process initiated");
     })
