@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const order_controller_1 = require("../controllers/order.controller");
+const auth_1 = require("../middleware/auth");
+const role_1 = require("../middleware/role");
+const user_model_1 = require("../models/user.model");
+const router = (0, express_1.Router)();
+router.post("/create", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.CUSTOMER]), order_controller_1.createOrder);
+router.get("/getall/orders/foruser", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.CUSTOMER]), order_controller_1.getOrdersForUser);
+router.post("/create-admin", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), order_controller_1.createAdminOrder);
+router.patch("/update-status/:id", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN, user_model_1.Role.BARISTOR]), order_controller_1.updateStatus);
+router.get("/getall", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), order_controller_1.getAllOrdersForAdmin);
+router.get("/barista/getall", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.BARISTOR]), order_controller_1.getAllOrdersForBarista);
+router.get("/search-user", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), order_controller_1.searchUserForAdmin);
+router.put("/update-order/:id", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), order_controller_1.updateOrderItems);
+exports.default = router;

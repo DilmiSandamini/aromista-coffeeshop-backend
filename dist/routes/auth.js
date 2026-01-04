@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_controller_1 = require("../controllers/auth.controller");
+const auth_1 = require("../middleware/auth");
+const role_1 = require("../middleware/role");
+const user_model_1 = require("../models/user.model");
+const router = (0, express_1.Router)();
+router.post("/register", auth_controller_1.registerUser);
+router.post("/login", auth_controller_1.login);
+router.post("/refresh", auth_controller_1.refreshToken);
+router.get("/me", auth_1.authenticate, auth_controller_1.getMyProfile);
+router.get("/getall", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), auth_controller_1.getAllUsers);
+router.post("/create", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), auth_controller_1.saveUser);
+router.put("/update/:id", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), auth_controller_1.updateUser);
+router.patch("/status/:id", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), auth_controller_1.toggleUserStatus);
+router.delete("/delete/:id", auth_1.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), auth_controller_1.deleteUser);
+exports.default = router;
