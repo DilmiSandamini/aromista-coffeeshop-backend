@@ -2,9 +2,6 @@
 
 The backend engine for the Aromista Coffee House, handling authentication, order processing, and product management.
 
-## 🚀 Public API URL
-- **URL:(https://github.com/DilmiSandamini/aromista-coffeeshop-backend.git)
-
 ## ✨ Core Functionalities
 - **Secure Authentication:** JWT (JSON Web Tokens) based login and refresh tokens.
 - **User Roles:** Admin, Barista, and Customer permission levels.
@@ -18,10 +15,3 @@ The backend engine for the Aromista Coffee House, handling authentication, order
 - **Database:** MongoDB Atlas
 - **Security:** Bcrypt.js (Password hashing), JWT (Authorization)
 - **Environment Management:** Dotenv
-
-## ⚙️ Environment Variables
-Create a `.env` file in the root directory and add:
-```env
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
