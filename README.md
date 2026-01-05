@@ -3,7 +3,7 @@
 The backend engine for the Aromista Coffee House, handling authentication, order processing, and product management.
 
 ## 🚀 Public API URL
-- **URL:** [මෙහි ඔබේ Backend Live Link එක දාන්න]
+- **URL:(https://github.com/DilmiSandamini/aromista-coffeeshop-backend.git)
 
 ## ✨ Core Functionalities
 - **Secure Authentication:** JWT (JSON Web Tokens) based login and refresh tokens.
