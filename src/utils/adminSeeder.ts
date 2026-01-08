@@ -1,49 +1,36 @@
-import bcrypt from "bcryptjs"; // Password hashing සඳහා
-import { User, Role, Status } from "../models/user.model"; // User model සහ Role enum
-import dotenv from "dotenv";
+import bcrypt from "bcryptjs"; // Password hashing 
+import { User, Role, Status } from "../models/user.model"; 
 
-dotenv.config();
-
-// .env ගොනුවෙන් Admin විස්තර ලබා ගැනීම
-const ADMIN_EMAIL = process.env.DEFAULT_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD;
-const ADMIN_FULLNAME = process.env.DEFAULT_ADMIN_FULLNAME || "Default Admin";
-
-/**
- * Default Admin User කෙනෙකු Database එකට එක් කිරීමේ කාර්යය
- */
-export const seedAdmin = async (): Promise<void> => {
-    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-        console.warn("⚠️ Admin Seeding Skipped: DEFAULT_ADMIN_EMAIL or PASSWORD not set in .env");
-        return;
-    }
-
+export const seedAdmin = async () => {
     try {
-        // 1. Admin User සිටිනවාදැයි පරීක්ෂා කිරීම
-        const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
+        const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+        const adminName = process.env.DDEFAULT_ADMIN_FULLNAME;
+        const adminContact = process.env.DEFAULT_ADMIN_CONTACT;
 
-        if (existingAdmin) {
-            console.log("✅ Default Admin already exists. No action taken.");
+        if (!adminEmail || !adminPassword || !adminName || !adminContact) {
+            console.error("Admin seeding failed: Missing environment variables.");
             return;
         }
 
-        // 2. Password Hash කිරීම
-        const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
-        
-        // 3. නව Admin User නිර්මාණය කිරීම
+        const existingAdmin = await User.findOne({ email: adminEmail });
+        if (existingAdmin) {
+            console.log("Admin user already exists. Skipping seeding.");
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
         await User.create({
-            fullname: ADMIN_FULLNAME,
-            email: ADMIN_EMAIL,
-            // contactNumber Required නිසා 00000 ලෙස placeholder එකක් තැබුවා
-            contactNumber: 0, 
-            password: hash,
-            roles: [Role.ADMIN],
-            approved: Status.ACTIVE,
+            fullname: adminName,
+            email: adminEmail,
+            password: hashedPassword,
+            contactNumber: adminContact,
+            roles: Role.ADMIN,
         });
 
-        console.log(`✨ Default Admin user created: ${ADMIN_EMAIL} with role ADMIN`);
-
+        console.log("Admin user seeded successfully.");
     } catch (error) {
-        console.error("❌ Error during Admin Seeding:", error);
+        console.error("Error seeding admin user:", error);
     }
 };

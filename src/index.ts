@@ -1,5 +1,3 @@
-// src/index.ts
-
 import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
@@ -13,20 +11,48 @@ import { authenticate } from "./middleware/auth"
 import { requireRole } from "./middleware/role"
 import { Role } from "./models/user.model"
 import { seedAdmin } from "./utils/adminSeeder";
+
 dotenv.config()
 
-const PORT = process.env.PORT
+const app = express();
 const MONGO_URI = process.env.MONGO_URI as string
-
-const app = express()
 
 app.use(express.json())
 app.use(
     cors({
-        origin: ["https://aromista-coffeeshop-frontend.vercel.app","http://localhost:5173","http://localhost:5174","https://rad-72-sample-fe.vercel.app/login"],
+        origin: ["https://aromista-coffeeshop-frontend.vercel.app","http://localhost:5173","http://localhost:5174"],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    })
+        credentials: true,
+        optionsSuccessStatus: 204
+  })
 )
+
+app.use(express.json());
+
+let isConnected = false;
+const connectToDatabase = async () => {
+  if (isConnected) return;
+  try {
+    await mongoose.connect(MONGO_URI);
+    isConnected = true;
+    console.log("DB connected");
+
+    // === ME TIKA ADD KARANNA ===
+    console.log("Seeding admin...");
+    await seedAdmin(); 
+    // ===========================
+    
+  } catch (err) {
+    console.error("DB error:", err);
+  }
+};
+
+// ... anith middleware saha routes thala thiyenawa ...
+
+app.use(async (req, res, next) => {
+  await connectToDatabase();
+  next();
+});
 
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/items", itemRouter)
@@ -35,27 +61,12 @@ app.use("/api/v1/orders", orderRouter)
 app.use("/api/v1/bookings", bookingRouter)
 
 app.get("/", (req, res) => {
-    res.send("Backend is running...")
-})
+  res.send("Backend is running...");
+});
 
-app.get("/test-1", (req, res) => {})
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
-app.get("/test-2", authenticate, (req, res) => {})
-
-app.get("/test-3", authenticate, requireRole([Role.ADMIN]), (req, res) => {})
-
-mongoose
-    .connect(MONGO_URI)
-    .then(() => {
-        console.log("DB connected")
-        seedAdmin(); 
-        console.log("Admin seeding process initiated");
-    })
-    .catch((err) => {
-        console.error(err)
-        process.exit(1)
-    })
-
-app.listen(PORT, () => {
-    console.log("Server is running")
-})
+export default app;
