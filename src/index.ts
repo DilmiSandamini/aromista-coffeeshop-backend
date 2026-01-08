@@ -23,7 +23,7 @@ const app = express()
 app.use(express.json())
 app.use(
     cors({
-        origin: ["http://localhost:5173","http://localhost:5174","https://rad-72-sample-fe.vercel.app/login"],
+        origin: ["https://aromista-coffeeshop-frontend.vercel.app","http://localhost:5173","http://localhost:5174","https://rad-72-sample-fe.vercel.app/login"],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     })
 )
