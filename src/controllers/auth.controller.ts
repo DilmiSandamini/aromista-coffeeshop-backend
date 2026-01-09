@@ -122,57 +122,56 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const role = req.query.role as string;
-    const status = req.query.status as string;
+    const roleFilter = req.query.role as string;
+    const statusFilter = req.query.status as string;
 
-    let query: any = {};
-    
-    query.roles = { $nin: [Role.ADMIN] };
+    let query: any = { roles: { $nin: [Role.ADMIN] } };
 
-    if (role && role !== "ALL") {
-      query.roles = { ...query.roles, $in: [role] };
+    if (roleFilter && roleFilter !== "ALL") {
+      query.roles = { ...query.roles, $in: [roleFilter] };
     }
-    
-    if (status && status !== "ALL") {
-      query.approved = status;
+    if (statusFilter && statusFilter !== "ALL") {
+      query.approved = statusFilter;
     }
 
-    const [users, totalUsersWithFilter] = await Promise.all([
-      User.find(query)
-        .select("-password")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      User.countDocuments(query)
-    ]);
-
-    const [allCount, customerCount, staffCount, activeCount, inactiveCount] = await Promise.all([
-        User.countDocuments({ roles: { $nin: [Role.ADMIN] } }), // Admins නැතිව ඔක්කොම
-        User.countDocuments({ roles: Role.CUSTOMER }),
-        User.countDocuments({ roles: { $nin: [Role.CUSTOMER, Role.ADMIN] } }), // Customer සහ Admin නොවන අය (Staff)
-        User.countDocuments({ approved: Status.ACTIVE }),
-        User.countDocuments({ approved: Status.INACTIVE }),
+    const [
+      users, 
+      totalFiltered, 
+      customerCount, 
+      staffCount, 
+      activeCount, 
+      inactiveCount
+    ] = await Promise.all([
+      User.find(query).select("-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.countDocuments(query),
+      User.countDocuments({ roles: Role.CUSTOMER }),
+      User.countDocuments({ roles: { $nin: [Role.CUSTOMER, Role.ADMIN] } }),
+      User.countDocuments({ approved: Status.ACTIVE }),
+      User.countDocuments({ approved: Status.INACTIVE }),
     ]);
 
     res.status(200).json({
       message: "ok",
       data: users,
       pagination: {
-        total: totalUsersWithFilter,
+        total: totalFiltered,
         page,
-        pages: Math.ceil(totalUsersWithFilter / limit),
+        pages: Math.ceil(totalFiltered / limit),
       },
       stats: {
-        all: allCount,
+        all: (customerCount + staffCount),
         customerCount,
         staffCount,
         activeCount,
         inactiveCount
       }
     });
-  } catch (err) {
-    console.error("Get Users Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+  } catch (err: any) {
+    console.error("Critical Backend Error:", err.message);
+    res.status(500).json({ 
+      message: "Internal server error", 
+      error: process.env.NODE_ENV === "development" ? err.message : undefined 
+    });
   }
 };
 
