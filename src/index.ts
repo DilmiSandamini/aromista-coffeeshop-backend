@@ -14,12 +14,13 @@ dotenv.config()
 const app = express();
 const MONGO_URI = process.env.MONGO_URI as string
 
+// 1. CORS Middleware (මුලින්ම තබන්න)
 app.use(cors({
-  origin: ['https://aromista-coffeeshop-frontend.vercel.app', 'http://localhost:5173', 'https://aromista-coffeeshop-frontend.vercel.app/register'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // OPTIONS එකතු කරන්න
+  origin: ['https://aromista-coffeeshop-frontend.vercel.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200 // Legacy browsers (IE11, etc) සඳහා
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json());
@@ -37,11 +38,17 @@ const connectToDatabase = async () => {
   }
 };
 
+// Database connection middleware
 app.use(async (req, res, next) => {
+  // OPTIONS request එකක් නම් DB connect වන තුරු නොසිට ඉක්මනින් response කරන්න
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   await connectToDatabase();
   next();
 });
 
+// Routes
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/items", itemRouter)
 app.use("/api/v1/categories", categoryRouter)
