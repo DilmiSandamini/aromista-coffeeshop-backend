@@ -7,9 +7,6 @@ import itemRouter from "./routes/item"
 import categoryRouter from "./routes/category"
 import orderRouter from "./routes/order"
 import bookingRouter from "./routes/booking"
-import { authenticate } from "./middleware/auth"
-import { requireRole } from "./middleware/role"
-import { Role } from "./models/user.model"
 import { seedAdmin } from "./utils/adminSeeder";
 
 dotenv.config()
@@ -17,12 +14,12 @@ dotenv.config()
 const app = express();
 const MONGO_URI = process.env.MONGO_URI as string
 
-app.use(express.json())
 app.use(cors({
-  origin: 'https://aromista-coffeeshop-frontend.vercel.app', // ඔබේ frontend URL එක පමණක් මෙතනට දෙන්න
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  origin: 'https://aromista-coffeeshop-frontend.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // OPTIONS එකතු කරන්න
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200 // Legacy browsers (IE11, etc) සඳහා
 }));
 
 app.use(express.json());
@@ -34,18 +31,11 @@ const connectToDatabase = async () => {
     await mongoose.connect(MONGO_URI);
     isConnected = true;
     console.log("DB connected");
-
-    // === ME TIKA ADD KARANNA ===
-    console.log("Seeding admin...");
     await seedAdmin(); 
-    // ===========================
-    
   } catch (err) {
     console.error("DB error:", err);
   }
 };
-
-// ... anith middleware saha routes thala thiyenawa ...
 
 app.use(async (req, res, next) => {
   await connectToDatabase();
@@ -61,10 +51,5 @@ app.use("/api/v1/bookings", bookingRouter)
 app.get("/", (req, res) => {
   res.send("Backend is running...");
 });
-
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
 
 export default app;
