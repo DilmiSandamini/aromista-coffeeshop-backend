@@ -16,7 +16,7 @@ const adminSeeder_1 = require("./utils/adminSeeder");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const MONGO_URI = process.env.MONGO_URI;
-// 1. CORS Middleware (මුලින්ම තබන්න)
+// 1. CORS Middleware - මුලින්ම තිබිය යුතුයි
 app.use((0, cors_1.default)({
     origin: ['https://aromista-coffeeshop-frontend.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -39,11 +39,10 @@ const connectToDatabase = async () => {
         console.error("DB error:", err);
     }
 };
-// Database connection middleware
+// Database connection & Preflight Handling
 app.use(async (req, res, next) => {
-    // OPTIONS request එකක් නම් DB connect වන තුරු නොසිට ඉක්මනින් response කරන්න
     if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
+        return res.status(200).end();
     }
     await connectToDatabase();
     next();
@@ -55,6 +54,6 @@ app.use("/api/v1/categories", category_1.default);
 app.use("/api/v1/orders", order_1.default);
 app.use("/api/v1/bookings", booking_1.default);
 app.get("/", (req, res) => {
-    res.send("Backend is running...");
+    res.send("Aromista Backend is running...");
 });
 exports.default = app;
