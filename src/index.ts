@@ -15,7 +15,7 @@ const app = express();
 const MONGO_URI = process.env.MONGO_URI as string
 
 app.use(cors({
-  origin: 'https://aromista-coffeeshop-frontend.vercel.app',
+  origin: ['https://aromista-coffeeshop-frontend.vercel.app', 'http://localhost:5173', 'https://aromista-coffeeshop-frontend.vercel.app/register'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // OPTIONS එකතු කරන්න
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
