@@ -4,45 +4,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedAdmin = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs")); // Password hashing සඳහා
-const user_model_1 = require("../models/user.model"); // User model සහ Role enum
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
-// .env ගොනුවෙන් Admin විස්තර ලබා ගැනීම
-const ADMIN_EMAIL = process.env.DEFAULT_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD;
-const ADMIN_FULLNAME = process.env.DEFAULT_ADMIN_FULLNAME || "Default Admin";
-/**
- * Default Admin User කෙනෙකු Database එකට එක් කිරීමේ කාර්යය
- */
+const bcryptjs_1 = __importDefault(require("bcryptjs")); // Password hashing 
+const user_model_1 = require("../models/user.model");
 const seedAdmin = async () => {
-    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-        console.warn("⚠️ Admin Seeding Skipped: DEFAULT_ADMIN_EMAIL or PASSWORD not set in .env");
-        return;
-    }
     try {
-        // 1. Admin User සිටිනවාදැයි පරීක්ෂා කිරීම
-        const existingAdmin = await user_model_1.User.findOne({ email: ADMIN_EMAIL });
-        if (existingAdmin) {
-            console.log("✅ Default Admin already exists. No action taken.");
+        const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+        const adminName = process.env.DDEFAULT_ADMIN_FULLNAME;
+        const adminContact = process.env.DEFAULT_ADMIN_CONTACT;
+        if (!adminEmail || !adminPassword || !adminName || !adminContact) {
+            console.error("Admin seeding failed: Missing environment variables.");
             return;
         }
-        // 2. Password Hash කිරීම
-        const hash = await bcryptjs_1.default.hash(ADMIN_PASSWORD, 10);
-        // 3. නව Admin User නිර්මාණය කිරීම
+        const existingAdmin = await user_model_1.User.findOne({ email: adminEmail });
+        if (existingAdmin) {
+            console.log("Admin user already exists. Skipping seeding.");
+            return;
+        }
+        const hashedPassword = await bcryptjs_1.default.hash(adminPassword, 10);
         await user_model_1.User.create({
-            fullname: ADMIN_FULLNAME,
-            email: ADMIN_EMAIL,
-            // contactNumber Required නිසා 00000 ලෙස placeholder එකක් තැබුවා
-            contactNumber: 0,
-            password: hash,
-            roles: [user_model_1.Role.ADMIN],
-            approved: user_model_1.Status.ACTIVE,
+            fullname: adminName,
+            email: adminEmail,
+            password: hashedPassword,
+            contactNumber: adminContact,
+            roles: user_model_1.Role.ADMIN,
         });
-        console.log(`✨ Default Admin user created: ${ADMIN_EMAIL} with role ADMIN`);
+        console.log("Admin user seeded successfully.");
     }
     catch (error) {
-        console.error("❌ Error during Admin Seeding:", error);
+        console.error("Error seeding admin user:", error);
     }
 };
 exports.seedAdmin = seedAdmin;

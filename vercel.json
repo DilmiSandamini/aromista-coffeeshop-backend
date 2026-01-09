@@ -8,7 +8,7 @@
   ],
   "headers": [
     {
-      "source": "/api/v1/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Allow-Origin", "value": "https://aromista-coffeeshop-frontend.vercel.app" },
@@ -17,10 +17,10 @@
       ]
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "index.ts"
+      "source": "/(.*)",
+      "destination": "index.ts"
     }
   ]
 }

@@ -1,5 +1,4 @@
 "use strict";
-// src/index.ts
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -13,19 +12,43 @@ const item_1 = __importDefault(require("./routes/item"));
 const category_1 = __importDefault(require("./routes/category"));
 const order_1 = __importDefault(require("./routes/order"));
 const booking_1 = __importDefault(require("./routes/booking"));
-const auth_2 = require("./middleware/auth");
-const role_1 = require("./middleware/role");
-const user_model_1 = require("./models/user.model");
 const adminSeeder_1 = require("./utils/adminSeeder");
 dotenv_1.default.config();
-const PORT = process.env.PORT;
-const MONGO_URI = process.env.MONGO_URI;
 const app = (0, express_1.default)();
-app.use(express_1.default.json());
+const MONGO_URI = process.env.MONGO_URI;
+// 1. CORS Middleware (මුලින්ම තබන්න)
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://rad-72-sample-fe.vercel.app/login"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    origin: ['https://aromista-coffeeshop-frontend.vercel.app', 'http://localhost:5173'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
+app.use(express_1.default.json());
+let isConnected = false;
+const connectToDatabase = async () => {
+    if (isConnected)
+        return;
+    try {
+        await mongoose_1.default.connect(MONGO_URI);
+        isConnected = true;
+        console.log("DB connected");
+        await (0, adminSeeder_1.seedAdmin)();
+    }
+    catch (err) {
+        console.error("DB error:", err);
+    }
+};
+// Database connection middleware
+app.use(async (req, res, next) => {
+    // OPTIONS request එකක් නම් DB connect වන තුරු නොසිට ඉක්මනින් response කරන්න
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    await connectToDatabase();
+    next();
+});
+// Routes
 app.use("/api/v1/auth", auth_1.default);
 app.use("/api/v1/items", item_1.default);
 app.use("/api/v1/categories", category_1.default);
@@ -34,20 +57,4 @@ app.use("/api/v1/bookings", booking_1.default);
 app.get("/", (req, res) => {
     res.send("Backend is running...");
 });
-app.get("/test-1", (req, res) => { });
-app.get("/test-2", auth_2.authenticate, (req, res) => { });
-app.get("/test-3", auth_2.authenticate, (0, role_1.requireRole)([user_model_1.Role.ADMIN]), (req, res) => { });
-mongoose_1.default
-    .connect(MONGO_URI)
-    .then(() => {
-    console.log("DB connected");
-    (0, adminSeeder_1.seedAdmin)();
-    console.log("Admin seeding process initiated");
-})
-    .catch((err) => {
-    console.error(err);
-    process.exit(1);
-});
-app.listen(PORT, () => {
-    console.log("Server is running");
-});
+exports.default = app;
