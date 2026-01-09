@@ -125,27 +125,31 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const role = req.query.role as string;
     const status = req.query.status as string;
 
-    // Filtering logic
     let query: any = {};
-    if (role && role !== "ALL") query.roles = { $in: [role] };
-    if (status && status !== "ALL") query.approved = status;
+    
+    query.roles = { $nin: [Role.ADMIN] };
 
-    // Fetch users and total count in parallel
-    // dont want admin
-    const [users, total] = await Promise.all([
+    if (role && role !== "ALL") {
+      query.roles = { ...query.roles, $in: [role] };
+    }
+    
+    if (status && status !== "ALL") {
+      query.approved = status;
+    }
+
+    const [users, totalUsersWithFilter] = await Promise.all([
       User.find(query)
         .select("-password")
-        .$where('this.roles.indexOf("ADMIN") === -1')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
       User.countDocuments(query)
     ]);
 
-    // Count stats for the UI badges
-    const [customerCount, staffCount, activeCount, inactiveCount] = await Promise.all([
+    const [allCount, customerCount, staffCount, activeCount, inactiveCount] = await Promise.all([
+        User.countDocuments({ roles: { $nin: [Role.ADMIN] } }), // Admins නැතිව ඔක්කොම
         User.countDocuments({ roles: Role.CUSTOMER }),
-        User.countDocuments({ roles: { $ne: Role.CUSTOMER } }),
+        User.countDocuments({ roles: { $nin: [Role.CUSTOMER, Role.ADMIN] } }), // Customer සහ Admin නොවන අය (Staff)
         User.countDocuments({ approved: Status.ACTIVE }),
         User.countDocuments({ approved: Status.INACTIVE }),
     ]);
@@ -154,12 +158,12 @@ export const getAllUsers = async (req: Request, res: Response) => {
       message: "ok",
       data: users,
       pagination: {
-        total,
+        total: totalUsersWithFilter,
         page,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(totalUsersWithFilter / limit),
       },
       stats: {
-        all: await User.countDocuments(),
+        all: allCount,
         customerCount,
         staffCount,
         activeCount,
@@ -167,6 +171,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       }
     });
   } catch (err) {
+    console.error("Get Users Error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
